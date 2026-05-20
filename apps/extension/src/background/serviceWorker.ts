@@ -8,6 +8,27 @@ function mergeWarnings(...warningSets: Array<string[] | undefined>): string[] {
   return [...new Set(warningSets.flatMap((warnings) => warnings ?? []))];
 }
 
+function createPendingDraft(sourceText: string, sourceUrl?: string, pageTitle?: string): EventDraft {
+  return {
+    id: crypto.randomUUID(),
+    title: "",
+    date: new Date().toISOString().slice(0, 10),
+    startTime: "",
+    endTime: "",
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    location: "",
+    description: "",
+    isAllDay: false,
+    calendarId: "primary",
+    sourceType: "selected_text",
+    sourceText,
+    sourceUrl,
+    pageTitle,
+    warnings: [],
+    createdAt: new Date().toISOString()
+  };
+}
+
 function createDraftFromExtraction(
   extractedEvent: Omit<EventDraft, "id" | "sourceType" | "createdAt">,
   sourceText: string,
@@ -55,24 +76,39 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     return;
   }
 
-  const settings = await getSettings();
-  await openSnapSortPanel(tab.id);
+  const tabId = tab.id;
+  const selectionText = info.selectionText;
+
+  // sidePanel.open() must run before other awaits or Chrome drops the user gesture.
+  try {
+    await openSnapSortPanel(tabId);
+  } catch (error) {
+    console.error("SnapSort failed to open side panel:", error);
+    return;
+  }
+
+  await saveDraft(createPendingDraft(selectionText, tab.url, tab.title));
 
   try {
+    const settings = await getSettings();
     const extraction = await extractFromText({
-      text: info.selectionText,
+      text: selectionText,
       pageTitle: tab.title,
       sourceUrl: tab.url,
       timeZone: settings.defaultTimeZone,
       currentDate: new Date().toISOString().slice(0, 10)
     });
 
-    const draft = createDraftFromExtraction(extraction.event, info.selectionText, tab.url, tab.title);
+    const draft = createDraftFromExtraction(extraction.event, selectionText, tab.url, tab.title);
     await saveDraft({
       ...draft,
       warnings: mergeWarnings(draft.warnings, extraction.warnings)
     });
-  } catch (_error) {
-    await clearDraft();
+  } catch (error) {
+    console.error("SnapSort text extraction failed:", error);
+    await saveDraft({
+      ...createPendingDraft(selectionText, tab.url, tab.title),
+      warnings: ["Failed to extract event details. Make sure the backend is running on http://localhost:8787."]
+    });
   }
 });
