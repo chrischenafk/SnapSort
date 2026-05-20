@@ -1,8 +1,9 @@
 import { extractFromText } from "@lib/extractionClient";
-import { clearDraft, getSettings, saveDraft } from "@lib/storage";
+import { getSettings, saveDraft } from "@lib/storage";
 import type { EventDraft } from "@shared/types";
 
 const CONTEXT_MENU_ID = "snapsort.create-event";
+const SIDE_PANEL_PATH = "sidepanel.html";
 
 function mergeWarnings(...warningSets: Array<string[] | undefined>): string[] {
   return [...new Set(warningSets.flatMap((warnings) => warnings ?? []))];
@@ -47,13 +48,56 @@ function createDraftFromExtraction(
   };
 }
 
-async function openSnapSortPanel(tabId: number): Promise<void> {
+function openSnapSortPanelFromGesture(tab: chrome.tabs.Tab): void {
+  if (tab.windowId !== undefined) {
+    void chrome.sidePanel.open({ windowId: tab.windowId });
+    return;
+  }
+
+  if (tab.id !== undefined) {
+    void chrome.sidePanel.open({ tabId: tab.id });
+  }
+}
+
+async function configureSnapSortPanel(tabId: number): Promise<void> {
   await chrome.sidePanel.setOptions({
     tabId,
-    path: "sidepanel.html",
+    path: SIDE_PANEL_PATH,
     enabled: true
   });
-  await chrome.sidePanel.open({ tabId });
+}
+
+async function processSelectedText(
+  tabId: number,
+  selectionText: string,
+  sourceUrl?: string,
+  pageTitle?: string
+): Promise<void> {
+  await configureSnapSortPanel(tabId);
+  await saveDraft(createPendingDraft(selectionText, sourceUrl, pageTitle));
+
+  try {
+    const settings = await getSettings();
+    const extraction = await extractFromText({
+      text: selectionText,
+      pageTitle,
+      sourceUrl,
+      timeZone: settings.defaultTimeZone,
+      currentDate: new Date().toISOString().slice(0, 10)
+    });
+
+    const draft = createDraftFromExtraction(extraction.event, selectionText, sourceUrl, pageTitle);
+    await saveDraft({
+      ...draft,
+      warnings: mergeWarnings(draft.warnings, extraction.warnings)
+    });
+  } catch (error) {
+    console.error("SnapSort text extraction failed:", error);
+    await saveDraft({
+      ...createPendingDraft(selectionText, sourceUrl, pageTitle),
+      warnings: ["Failed to extract event details. Make sure the backend is running on http://localhost:8787."]
+    });
+  }
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -64,51 +108,27 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-chrome.action.onClicked.addListener(async (tab) => {
+chrome.action.onClicked.addListener((tab) => {
   if (!tab.id) {
     return;
   }
-  await openSnapSortPanel(tab.id);
+
+  openSnapSortPanelFromGesture(tab);
+  void configureSnapSortPanel(tab.id);
 });
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== CONTEXT_MENU_ID || !tab?.id || !info.selectionText) {
     return;
   }
 
   const tabId = tab.id;
   const selectionText = info.selectionText;
+  const sourceUrl = tab.url;
+  const pageTitle = tab.title;
 
-  // sidePanel.open() must run before other awaits or Chrome drops the user gesture.
-  try {
-    await openSnapSortPanel(tabId);
-  } catch (error) {
-    console.error("SnapSort failed to open side panel:", error);
-    return;
-  }
+  // open() must be invoked synchronously in this handler before any await.
+  openSnapSortPanelFromGesture(tab);
 
-  await saveDraft(createPendingDraft(selectionText, tab.url, tab.title));
-
-  try {
-    const settings = await getSettings();
-    const extraction = await extractFromText({
-      text: selectionText,
-      pageTitle: tab.title,
-      sourceUrl: tab.url,
-      timeZone: settings.defaultTimeZone,
-      currentDate: new Date().toISOString().slice(0, 10)
-    });
-
-    const draft = createDraftFromExtraction(extraction.event, selectionText, tab.url, tab.title);
-    await saveDraft({
-      ...draft,
-      warnings: mergeWarnings(draft.warnings, extraction.warnings)
-    });
-  } catch (error) {
-    console.error("SnapSort text extraction failed:", error);
-    await saveDraft({
-      ...createPendingDraft(selectionText, tab.url, tab.title),
-      warnings: ["Failed to extract event details. Make sure the backend is running on http://localhost:8787."]
-    });
-  }
+  void processSelectedText(tabId, selectionText, sourceUrl, pageTitle);
 });
