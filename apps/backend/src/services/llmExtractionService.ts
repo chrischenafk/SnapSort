@@ -7,18 +7,18 @@ function mockExtractFromText(request: ExtractTextRequest): ExtractionResponse {
 
   const response: ExtractionResponse = {
     event: {
-      title: "New Event",
+      title: "Extracted Event",
       date: request.currentDate,
       startTime: defaultStart,
       endTime: addMinutesToTime(defaultStart, 60),
       timeZone: request.timeZone,
-      location: "",
+      location: "Location from selected text",
       description: request.text,
       isAllDay: false,
       calendarId: "primary",
       warnings: ["End time was inferred as 1 hour after start time."]
     },
-    warnings: ["Using mock extractor because no LLM implementation is configured yet."],
+    warnings: ["Mock extraction result. Real AI extraction will be added later."],
     rawModelOutput: null
   };
 

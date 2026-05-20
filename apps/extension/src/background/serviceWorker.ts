@@ -49,15 +49,18 @@ function createDraftFromExtraction(
 }
 
 function openSidePanelForTab(tab: chrome.tabs.Tab): void {
-  if (tab.id === undefined) {
+  if (tab.windowId !== undefined) {
+    chrome.sidePanel.open({ windowId: tab.windowId }).catch((error) => {
+      console.warn("SnapSort: sidePanel.open:", error);
+    });
     return;
   }
 
-  // Must be called synchronously from a user-gesture handler; catch rejections
-  // (e.g. panel already open) so they are not logged as uncaught promise errors.
-  chrome.sidePanel.open({ tabId: tab.id }).catch((error) => {
-    console.warn("SnapSort: sidePanel.open:", error);
-  });
+  if (tab.id !== undefined) {
+    chrome.sidePanel.open({ tabId: tab.id }).catch((error) => {
+      console.warn("SnapSort: sidePanel.open:", error);
+    });
+  }
 }
 
 async function configureSnapSortPanel(tabId: number): Promise<void> {
@@ -125,12 +128,14 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     return;
   }
 
+  // sidePanel.open() must run synchronously in this user-gesture handler before
+  // any async work (storage/fetch/promise chains), or Chrome rejects it.
+  openSidePanelForTab(tab);
+
   const tabId = tab.id;
   const selectionText = info.selectionText;
   const sourceUrl = tab.url;
   const pageTitle = tab.title;
-
-  openSidePanelForTab(tab);
 
   void processSelectedText(tabId, selectionText, sourceUrl, pageTitle);
 });
