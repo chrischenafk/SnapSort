@@ -48,15 +48,16 @@ function createDraftFromExtraction(
   };
 }
 
-function openSnapSortPanelFromGesture(tab: chrome.tabs.Tab): void {
-  if (tab.windowId !== undefined) {
-    void chrome.sidePanel.open({ windowId: tab.windowId });
+function openSidePanelForTab(tab: chrome.tabs.Tab): void {
+  if (tab.id === undefined) {
     return;
   }
 
-  if (tab.id !== undefined) {
-    void chrome.sidePanel.open({ tabId: tab.id });
-  }
+  // Must be called synchronously from a user-gesture handler; catch rejections
+  // (e.g. panel already open) so they are not logged as uncaught promise errors.
+  chrome.sidePanel.open({ tabId: tab.id }).catch((error) => {
+    console.warn("SnapSort: sidePanel.open:", error);
+  });
 }
 
 async function configureSnapSortPanel(tabId: number): Promise<void> {
@@ -65,6 +66,10 @@ async function configureSnapSortPanel(tabId: number): Promise<void> {
     path: SIDE_PANEL_PATH,
     enabled: true
   });
+}
+
+async function enableSidePanelOnActionClick(): Promise<void> {
+  await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 }
 
 async function processSelectedText(
@@ -101,6 +106,10 @@ async function processSelectedText(
 }
 
 chrome.runtime.onInstalled.addListener(() => {
+  void enableSidePanelOnActionClick().catch((error) => {
+    console.warn("SnapSort: failed to enable openPanelOnActionClick:", error);
+  });
+
   chrome.contextMenus.create({
     id: CONTEXT_MENU_ID,
     title: "Create Calendar Event with SnapSort",
@@ -108,14 +117,8 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-chrome.action.onClicked.addListener((tab) => {
-  if (!tab.id) {
-    return;
-  }
-
-  openSnapSortPanelFromGesture(tab);
-  void configureSnapSortPanel(tab.id);
-});
+// Toolbar icon: Chrome opens the side panel via setPanelBehavior (proper user gesture).
+// No manual sidePanel.open() here — that caused uncaught gesture errors.
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== CONTEXT_MENU_ID || !tab?.id || !info.selectionText) {
@@ -127,8 +130,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   const sourceUrl = tab.url;
   const pageTitle = tab.title;
 
-  // open() must be invoked synchronously in this handler before any await.
-  openSnapSortPanelFromGesture(tab);
+  openSidePanelForTab(tab);
 
   void processSelectedText(tabId, selectionText, sourceUrl, pageTitle);
 });
