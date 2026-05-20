@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { EventForm } from "./components/EventForm";
-import { clearDraft, DRAFT_STORAGE_KEY, getDraft } from "@lib/storage";
+import { clearDraft, DRAFT_STORAGE_KEY, getDraft, saveDraft } from "@lib/storage";
 import type { EventDraft } from "@shared/types";
 
 function createEmptyDraft(): EventDraft {
@@ -71,6 +71,11 @@ export function SidePanelApp(): JSX.Element {
     setDraft(createEmptyDraft());
   };
 
+  const handleDraftChange = (nextDraft: EventDraft): void => {
+    setDraft(nextDraft);
+    void saveDraft(nextDraft);
+  };
+
   return (
     <main className="mx-auto min-h-screen max-w-2xl bg-white p-4 text-slate-900">
       <header className="mb-4 border-b border-slate-200 pb-3">
@@ -104,14 +109,14 @@ export function SidePanelApp(): JSX.Element {
             </section>
           )}
 
-          <EventForm draft={draft} onDraftChange={setDraft} />
+          <EventForm draft={draft} onDraftChange={handleDraftChange} />
 
           <footer className="mt-5 flex items-center justify-between">
             <button type="button" className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50" onClick={() => void handleDiscard()}>
               Discard
             </button>
-            <button type="button" className="rounded-md bg-snapsortBlue px-4 py-2 text-sm font-medium text-white hover:opacity-90">
-              Save to Google Calendar
+            <button type="button" disabled className="cursor-not-allowed rounded-md bg-slate-300 px-4 py-2 text-sm font-medium text-white">
+              Calendar save coming next
             </button>
           </footer>
         </>
