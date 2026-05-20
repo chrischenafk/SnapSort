@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "SnapSort",
+  "version": "0.1.0",
+  "description": "Turn selected text or screenshots into editable Google Calendar events.",
+  "permissions": ["activeTab", "scripting", "storage", "contextMenus", "identity", "sidePanel"],
+  "host_permissions": ["https://www.googleapis.com/*", "http://localhost:8787/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "SnapSort"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "oauth2": {
+    "client_id": "GOOGLE_OAUTH_CLIENT_ID_GOES_HERE",
+    "scopes": ["https://www.googleapis.com/auth/calendar.events"]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "snapsort",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SnapSort monorepo for Chrome extension and extraction backend.",
+  "workspaces": [
+    "apps/extension",
+    "apps/backend"
+  ],
+  "scripts": {
+    "dev:extension": "npm run dev --workspace apps/extension",
+    "dev:backend": "npm run dev --workspace apps/backend",
+    "build": "npm run build --workspace apps/extension && npm run build --workspace apps/backend",
+    "typecheck": "npm run typecheck --workspace apps/extension && npm run typecheck --workspace apps/backend",
+    "lint": "npm run lint --workspace apps/extension && npm run lint --workspace apps/backend"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
