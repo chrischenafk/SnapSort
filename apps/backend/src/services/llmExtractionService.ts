@@ -28,18 +28,18 @@ function mockExtractFromText(request: ExtractTextRequest): ExtractionResponse {
 function mockExtractFromImage(request: ExtractImageRequest): ExtractionResponse {
   const response: ExtractionResponse = {
     event: {
-      title: "Image Extracted Event",
+      title: "Extracted Screenshot Event",
       date: request.currentDate,
-      startTime: "09:00",
-      endTime: "10:00",
+      startTime: "17:00",
+      endTime: "18:00",
       timeZone: request.timeZone,
-      location: "",
-      description: "Generated from screenshot extraction placeholder.",
+      location: "Location from screenshot",
+      description: "Mock event extracted from screenshot.",
       isAllDay: false,
       calendarId: "primary",
-      warnings: ["This event is from screenshot placeholder extraction."]
+      warnings: ["Image extraction is currently using mock data."]
     },
-    warnings: ["Image extraction is currently mocked."],
+    warnings: ["Image extraction is currently using mock data."],
     rawModelOutput: null
   };
 

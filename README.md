@@ -105,6 +105,18 @@ To use it, configure your Google Cloud project:
 
 Current MVP behavior saves to the primary Google Calendar by default. Multi-account and multi-calendar support are planned for future milestones.
 
+## Screenshot Region Capture
+
+Screenshot region capture is now implemented for the side panel flow.
+
+- Open the SnapSort side panel and click **Capture Screenshot**.
+- Drag over the visible page region that contains event details.
+- Press **Esc** to cancel capture mode at any time.
+- The selected screenshot region is shown as a preview in the side panel.
+- SnapSort sends the captured image to the backend `/api/extract/image` endpoint and pre-fills the editable event form.
+
+Current screenshot extraction uses mock backend data unless real vision extraction is configured. This flow is intended for flyers, images, and PDF-like content where text selection is unavailable.
+
 ## Privacy and Security Notes
 
 - LLM API keys belong only in backend environment variables.
