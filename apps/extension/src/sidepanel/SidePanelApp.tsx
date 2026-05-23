@@ -26,10 +26,13 @@ function createEmptyDraft(): EventDraft {
 export function SidePanelApp(): JSX.Element {
   const [draft, setDraft] = useState<EventDraft>(createEmptyDraft);
   const [status, setStatus] = useState<"idle" | "loading" | "ready">("loading");
+  const [captureStatus, setCaptureStatus] = useState<"idle" | "starting" | "error">("idle");
+  const [captureError, setCaptureError] = useState<string>();
+  const [showCaptureHint, setShowCaptureHint] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [saveError, setSaveError] = useState<string>();
   const [savedEventLink, setSavedEventLink] = useState<string>();
-  const isExtracting = status === "ready" && Boolean(draft.sourceText?.trim()) && !draft.title.trim();
+  const isExtracting = status === "ready" && Boolean((draft.sourceText?.trim() || draft.sourceImageBase64) && !draft.title.trim());
 
   useEffect(() => {
     const hydrateDraft = async (): Promise<void> => {
@@ -64,11 +67,8 @@ export function SidePanelApp(): JSX.Element {
   }, []);
 
   const sourcePreview = useMemo(() => {
-    if (draft.sourceType === "screenshot") {
-      return "Screenshot source preview will appear here in Milestone 6.";
-    }
     return draft.sourceText?.trim() || "No selected text captured yet.";
-  }, [draft.sourceText, draft.sourceType]);
+  }, [draft.sourceText]);
 
   const handleDiscard = async (): Promise<void> => {
     await clearDraft();
@@ -104,11 +104,45 @@ export function SidePanelApp(): JSX.Element {
     }
   };
 
+  const handleStartScreenshotCapture = async (): Promise<void> => {
+    setShowCaptureHint(true);
+    setCaptureStatus("starting");
+    setCaptureError(undefined);
+
+    try {
+      const response = (await chrome.runtime.sendMessage({
+        type: "SNAPSORT_START_SCREENSHOT_MODE"
+      })) as { ok?: boolean; error?: string } | undefined;
+
+      if (!response?.ok) {
+        throw new Error(response?.error || "Failed to start screenshot mode.");
+      }
+
+      setCaptureStatus("idle");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to start screenshot mode.";
+      setCaptureStatus("error");
+      setCaptureError(message);
+    }
+  };
+
   return (
     <main className="mx-auto min-h-screen max-w-2xl bg-white p-4 text-slate-900">
       <header className="mb-4 border-b border-slate-200 pb-3">
         <h1 className="text-xl font-semibold">SnapSort</h1>
         <p className="mt-1 text-sm text-slate-600">Review extracted details before saving to Google Calendar.</p>
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => void handleStartScreenshotCapture()}
+            disabled={captureStatus === "starting"}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {captureStatus === "starting" ? "Starting capture..." : "Capture Screenshot"}
+          </button>
+          {showCaptureHint && <p className="mt-2 text-xs text-slate-600">Drag over event details on the page. Press Esc to cancel.</p>}
+          {captureStatus === "error" && captureError && <p className="mt-1 text-xs text-rose-700">{captureError}</p>}
+        </div>
       </header>
 
       {status === "loading" ? (
@@ -123,7 +157,11 @@ export function SidePanelApp(): JSX.Element {
 
           <section className="mb-4 rounded-md border border-slate-200 bg-slate-50 p-3">
             <h2 className="text-sm font-medium text-slate-700">Source Preview</h2>
-            <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">{sourcePreview}</p>
+            {draft.sourceType === "screenshot" && draft.sourceImageBase64 ? (
+              <img src={draft.sourceImageBase64} alt="Screenshot source preview" className="mt-2 max-h-56 w-full rounded-md border border-slate-200 object-contain" />
+            ) : (
+              <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">{sourcePreview}</p>
+            )}
           </section>
 
           {draft.warnings.length > 0 && (
