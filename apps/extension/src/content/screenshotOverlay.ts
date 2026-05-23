@@ -8,11 +8,9 @@ export type ScreenshotSelection = {
 export function startScreenshotOverlay(): void {
   // Milestone 6 will implement overlay rendering and selection behavior.
   // Placeholder exists so content script can call a typed entrypoint.
-  // eslint-disable-next-line no-console
   console.debug("SnapSort screenshot overlay placeholder started.");
 }
 
 export function cancelScreenshotOverlay(): void {
-  // eslint-disable-next-line no-console
   console.debug("SnapSort screenshot overlay placeholder cancelled.");
 }
