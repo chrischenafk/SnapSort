@@ -73,6 +73,7 @@ snapsort/
 - Workspace monorepo with extension and backend apps
 - Manifest V3 baseline and context menu registration in service worker
 - Side panel React shell with editable event form
+- Google Calendar save action from the side panel form
 - Options page shell with `chrome.storage` settings persistence
 - Shared `EventDraft` and `UserSettings` types
 - Shared Zod schemas for event and extraction payload validation
@@ -90,6 +91,19 @@ snapsort/
 5. Google Calendar save
 6. Screenshot flow
 7. Polish
+
+## Google Calendar Save Setup
+
+Google Calendar save is now implemented for the side panel draft flow.
+
+To use it, configure your Google Cloud project:
+
+1. Enable the Google Calendar API.
+2. Configure the OAuth consent screen.
+3. Create a Chrome extension OAuth client.
+4. Replace `GOOGLE_OAUTH_CLIENT_ID_GOES_HERE` in `apps/extension/manifest.json` with the real client ID.
+
+Current MVP behavior saves to the primary Google Calendar by default. Multi-account and multi-calendar support are planned for future milestones.
 
 ## Privacy and Security Notes
 

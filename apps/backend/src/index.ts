@@ -24,6 +24,5 @@ app.use("/api/extract/text", extractTextRouter);
 app.use("/api/extract/image", extractImageRouter);
 
 app.listen(port, () => {
-  // eslint-disable-next-line no-console
   console.log(`SnapSort backend listening on http://localhost:${port}`);
 });

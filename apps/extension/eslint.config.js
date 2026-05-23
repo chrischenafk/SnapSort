@@ -14,6 +14,11 @@ export default [
         sourceType: "module"
       },
       globals: {
+        crypto: "readonly",
+        document: "readonly",
+        fetch: "readonly",
+        Response: "readonly",
+        window: "readonly",
         chrome: "readonly",
         console: "readonly"
       }
@@ -24,7 +29,9 @@ export default [
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
-      ...reactHooks.configs.recommended.rules
+      ...reactHooks.configs.recommended.rules,
+      // TypeScript handles symbol resolution for TS/TSX files.
+      "no-undef": "off"
     }
   }
 ];

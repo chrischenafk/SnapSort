@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { EventForm } from "./components/EventForm";
+import { createGoogleCalendarEvent } from "@lib/calendarApi";
 import { clearDraft, DRAFT_STORAGE_KEY, getDraft, saveDraft } from "@lib/storage";
 import type { EventDraft } from "@shared/types";
 
@@ -25,6 +26,9 @@ function createEmptyDraft(): EventDraft {
 export function SidePanelApp(): JSX.Element {
   const [draft, setDraft] = useState<EventDraft>(createEmptyDraft);
   const [status, setStatus] = useState<"idle" | "loading" | "ready">("loading");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveError, setSaveError] = useState<string>();
+  const [savedEventLink, setSavedEventLink] = useState<string>();
   const isExtracting = status === "ready" && Boolean(draft.sourceText?.trim()) && !draft.title.trim();
 
   useEffect(() => {
@@ -69,11 +73,35 @@ export function SidePanelApp(): JSX.Element {
   const handleDiscard = async (): Promise<void> => {
     await clearDraft();
     setDraft(createEmptyDraft());
+    setSaveStatus("idle");
+    setSaveError(undefined);
+    setSavedEventLink(undefined);
   };
 
   const handleDraftChange = (nextDraft: EventDraft): void => {
     setDraft(nextDraft);
     void saveDraft(nextDraft);
+    if (saveStatus !== "idle") {
+      setSaveStatus("idle");
+      setSaveError(undefined);
+      setSavedEventLink(undefined);
+    }
+  };
+
+  const handleSaveToGoogleCalendar = async (): Promise<void> => {
+    setSaveStatus("saving");
+    setSaveError(undefined);
+    setSavedEventLink(undefined);
+
+    try {
+      const result = await createGoogleCalendarEvent(draft);
+      setSaveStatus("saved");
+      setSavedEventLink(result.htmlLink);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to save event to Google Calendar.";
+      setSaveStatus("error");
+      setSaveError(message);
+    }
   };
 
   return (
@@ -111,12 +139,34 @@ export function SidePanelApp(): JSX.Element {
 
           <EventForm draft={draft} onDraftChange={handleDraftChange} />
 
+          {saveStatus === "saved" && (
+            <section className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+              <p>Event saved to Google Calendar.</p>
+              {savedEventLink && (
+                <a href={savedEventLink} target="_blank" rel="noreferrer" className="mt-1 inline-block font-medium underline">
+                  Open in Google Calendar
+                </a>
+              )}
+            </section>
+          )}
+
+          {saveStatus === "error" && saveError && (
+            <section className="mt-4 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
+              {saveError}
+            </section>
+          )}
+
           <footer className="mt-5 flex items-center justify-between">
             <button type="button" className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50" onClick={() => void handleDiscard()}>
               Discard
             </button>
-            <button type="button" disabled className="cursor-not-allowed rounded-md bg-slate-300 px-4 py-2 text-sm font-medium text-white">
-              Calendar save coming next
+            <button
+              type="button"
+              disabled={saveStatus === "saving"}
+              onClick={() => void handleSaveToGoogleCalendar()}
+              className="rounded-md bg-snapsortBlue px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saveStatus === "saving" ? "Saving..." : "Save to Google Calendar"}
             </button>
           </footer>
         </>
