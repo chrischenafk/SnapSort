@@ -136,7 +136,10 @@ async function processSelectedText(
       pageTitle,
       sourceUrl,
       timeZone: settings.defaultTimeZone,
-      currentDate: new Date().toISOString().slice(0, 10)
+      currentDate: new Date().toISOString().slice(0, 10),
+      customInstructions: settings.customInstructions,
+      defaultDurationMinutes: settings.defaultDurationMinutes,
+      includeSourceInDescription: settings.includeSourceInDescription
     });
 
     const draft = createDraftFromExtraction(extraction.event, selectionText, sourceUrl, pageTitle);
@@ -148,7 +151,7 @@ async function processSelectedText(
     console.error("SnapSort text extraction failed:", error);
     await saveDraft({
       ...createPendingDraft(selectionText, sourceUrl, pageTitle),
-      warnings: ["Failed to extract event details. Make sure the backend is running on http://localhost:8787."]
+      warnings: ["AI extraction failed. You can still manually edit the event."]
     });
   }
 }
@@ -227,7 +230,10 @@ async function processScreenshotSelection(tab: chrome.tabs.Tab, rect: Screenshot
     const extraction = await extractFromImage({
       imageBase64: croppedImageDataUrl,
       timeZone: settings.defaultTimeZone,
-      currentDate: new Date().toISOString().slice(0, 10)
+      currentDate: new Date().toISOString().slice(0, 10),
+      customInstructions: settings.customInstructions,
+      defaultDurationMinutes: settings.defaultDurationMinutes,
+      includeSourceInDescription: settings.includeSourceInDescription
     });
 
     const draft = createScreenshotDraftFromExtraction(extraction.event, croppedImageDataUrl);
@@ -239,7 +245,7 @@ async function processScreenshotSelection(tab: chrome.tabs.Tab, rect: Screenshot
     console.error("SnapSort screenshot extraction failed:", error);
     await saveDraft({
       ...pendingDraft,
-      warnings: ["Failed to extract event details from screenshot. Make sure the backend is running on http://localhost:8787."]
+      warnings: ["AI extraction failed. You can still manually edit the event."]
     });
   }
 }

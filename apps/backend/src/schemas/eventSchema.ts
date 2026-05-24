@@ -33,13 +33,19 @@ export const extractTextRequestSchema = z.object({
   pageTitle: z.string().optional(),
   sourceUrl: z.string().url().optional(),
   timeZone: z.string().min(1),
-  currentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+  currentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  customInstructions: z.string().optional(),
+  defaultDurationMinutes: z.number().int().positive().optional(),
+  includeSourceInDescription: z.boolean().optional()
 });
 
 export const extractImageRequestSchema = z.object({
   imageBase64: z.string().min(1),
   timeZone: z.string().min(1),
-  currentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+  currentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  customInstructions: z.string().optional(),
+  defaultDurationMinutes: z.number().int().positive().optional(),
+  includeSourceInDescription: z.boolean().optional()
 });
 
 export type ExtractTextRequest = z.infer<typeof extractTextRequestSchema>;
