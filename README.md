@@ -96,14 +96,24 @@ snapsort/
 
 Google Calendar save is now implemented for the side panel draft flow.
 
-To use it, configure your Google Cloud project:
+To use it, configure your Google Cloud project and extension OAuth client:
 
-1. Enable the Google Calendar API.
-2. Configure the OAuth consent screen.
-3. Create a Chrome extension OAuth client.
-4. Replace `GOOGLE_OAUTH_CLIENT_ID_GOES_HERE` in `apps/extension/manifest.json` with the real client ID.
+1. Create or select a Google Cloud project.
+2. Enable the Google Calendar API.
+3. Configure the OAuth consent screen.
+4. Create an OAuth client with application type **Chrome Extension**.
+5. Use your Chrome extension ID from `chrome://extensions` as the OAuth client Item ID.
+6. Copy the generated OAuth client ID (`...apps.googleusercontent.com`).
+7. Update `apps/extension/manifest.json` and replace `GOOGLE_OAUTH_CLIENT_ID_GOES_HERE` (if still present) with the real OAuth client ID.
+8. Keep the scope as `https://www.googleapis.com/auth/calendar.events`.
+9. Add your Google accounts as OAuth test users while developing.
+10. Expect OAuth verification requirements before public release for arbitrary users.
 
-Current MVP behavior saves to the primary Google Calendar by default. Multi-account and multi-calendar support are planned for future milestones.
+Notes:
+
+- MVP saves to the signed-in user's primary Google Calendar.
+- Multiple Google accounts and multiple calendar selection are future work.
+- Cursor/code cannot generate this OAuth client ID automatically; it must be created in your Google Cloud project.
 
 ## Screenshot Region Capture
 
@@ -117,9 +127,46 @@ Screenshot region capture is now implemented for the side panel flow.
 
 Current screenshot extraction uses mock backend data unless real vision extraction is configured. This flow is intended for flyers, images, and PDF-like content where text selection is unavailable.
 
+## Claude Extraction Setup
+
+SnapSort extraction runs in the backend and supports mock mode or Anthropic Claude mode.
+
+Backend environment variables (`apps/backend/.env`):
+
+- `ANTHROPIC_API_KEY`
+- `ANTHROPIC_MODEL` (default `claude-sonnet-4-6`)
+- `USE_MOCK_EXTRACTION` (`true` or `false`)
+
+Run in mock mode (safe default):
+
+```bash
+USE_MOCK_EXTRACTION=true npm run dev:backend
+```
+
+Run in real Claude mode:
+
+```bash
+USE_MOCK_EXTRACTION=false ANTHROPIC_API_KEY=your_key ANTHROPIC_MODEL=claude-sonnet-4-6 npm run dev:backend
+```
+
+Behavior:
+
+- If `USE_MOCK_EXTRACTION=true`, backend uses mock extraction.
+- If `ANTHROPIC_API_KEY` is missing, backend falls back to mock extraction.
+- If `USE_MOCK_EXTRACTION=false` and `ANTHROPIC_API_KEY` is set, backend calls Claude for text and image extraction.
+
+Current extraction limitations:
+
+- One event at a time.
+- Multiple-event extraction is future work.
+- Extraction quality may require prompt tuning and post-processing polish.
+
 ## Privacy and Security Notes
 
 - LLM API keys belong only in backend environment variables.
+- Selected text and screenshots are sent to the backend for extraction.
+- When Claude mode is enabled, backend sends extraction input to Anthropic.
+- The extension never stores the Claude API key.
 - The extension should not create calendar events without user confirmation.
 - Selected text and screenshots are treated as sensitive input and should avoid production logging.
 - Scope and permissions are intentionally minimized for MVP.

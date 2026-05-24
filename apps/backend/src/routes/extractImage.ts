@@ -15,6 +15,6 @@ extractImageRouter.post("/", async (request, response) => {
       response.status(400).json({ error: "Invalid extract image payload", issues: error.issues });
       return;
     }
-    response.status(500).json({ error: "Failed to extract event from image" });
+    response.status(500).json({ error: "AI extraction failed. You can still manually edit the event." });
   }
 });

@@ -41,12 +41,18 @@ export type ExtractTextRequest = {
   sourceUrl?: string;
   timeZone: string;
   currentDate: string;
+  customInstructions?: string;
+  defaultDurationMinutes?: number;
+  includeSourceInDescription?: boolean;
 };
 
 export type ExtractImageRequest = {
   imageBase64: string;
   timeZone: string;
   currentDate: string;
+  customInstructions?: string;
+  defaultDurationMinutes?: number;
+  includeSourceInDescription?: boolean;
 };
 
 export type ExtractionResponse = {
