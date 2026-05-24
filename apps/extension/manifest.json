@@ -23,7 +23,7 @@
     }
   ],
   "oauth2": {
-    "client_id": "GOOGLE_OAUTH_CLIENT_ID_GOES_HERE",
+    "client_id": "805677844056-5akb55jgqocg1qdnqappgnnfp6v6do41.apps.googleusercontent.com",
     "scopes": ["https://www.googleapis.com/auth/calendar.events"]
   }
 }
